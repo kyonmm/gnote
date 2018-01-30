@@ -41,8 +41,24 @@ class PowerPointWriter {
         def title = topSlide.getPlaceholder(0)
         title.setText(document.doctitle())
 
+        // toc
+        def toc = ppt.createSlide(master.getLayout("Title and Content"))
+        toc.getPlaceholders().each { it.clearText() }
+        def tocHeader = toc.getPlaceholder(0)
+        tocHeader.setText("Agenda")
+        document.blocks.eachWithIndex { chapter, index ->
+            def content = toc.getPlaceholder(1)
+            content.appendText(chapter.title, true)
+        }
+
+
 
         document.blocks.eachWithIndex{chapter, index ->
+            // == section
+            def sectionSlide = ppt.createSlide(master.getLayout("Section Header"))
+            //sectionSlide.getPlaceholders().each{it.clearText()}
+            def sectionHeader = sectionSlide.getPlaceholder(0)
+            sectionHeader.setText(chapter.title)
             // ==
             def slide = ppt.createSlide(master.getLayout("Title and Content"))
             slide.getPlaceholders().each{it.clearText()}
