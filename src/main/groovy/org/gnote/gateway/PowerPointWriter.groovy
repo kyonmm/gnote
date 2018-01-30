@@ -2,6 +2,7 @@ package org.gnote.gateway
 
 import org.apache.poi.sl.usermodel.AutoNumberingScheme
 import org.apache.poi.xslf.usermodel.XMLSlideShow
+import org.apache.poi.xslf.usermodel.XSLFSlide
 
 import java.awt.Color
 import java.awt.Rectangle
@@ -21,38 +22,43 @@ class PowerPointWriter {
         def ppt = new XMLSlideShow();
 
         def master =  ppt.getSlideMasters().get(0)
+        /**
+         * Title Slide
+         Picture with Caption
+         Title and Vertical Text
+         Comparison
+         Blank
+         Vertical Title and Text
+         Title and Content
+         Title Only
+         Section Header
+         Two Content
+         Content with Caption
+         */
 
-        def topSlide = ppt.createSlide();
-        def shape = topSlide.createTextBox();
+        def topSlide = ppt.createSlide(master.getLayout("Title Slide"));
+        //topSlide.getPlaceholders().each{it.clearText()}
+        def title = topSlide.getPlaceholder(0)
+        title.setText(document.doctitle())
 
-        def p = shape.addNewTextParagraph();
-
-        def r1 = p.addNewTextRun();
-        r1.setText(document.doctitle());
-        r1.setFontColor(Color.blue);
-        r1.setFontSize(24);
-        shape.setAnchor(new Rectangle(200, 200, 600, 600));
 
         document.blocks.eachWithIndex{chapter, index ->
             // ==
-            def slide = ppt.createSlide()
-            def header = slide.createTextBox()
+            def slide = ppt.createSlide(master.getLayout("Title and Content"))
+            slide.getPlaceholders().each{it.clearText()}
+            def header = slide.getPlaceholder(0)
             header.setText(chapter.title)
-            header.setAnchor(new Rectangle(20, 20, 600, 30));
             def level = chapter.level
             // content or ===
-            def content = slide.createTextBox()
+            def content = slide.getPlaceholder(1)
             chapter.blocks.eachWithIndex{i, idx ->
                 if(i.level == level){
                     if(i.blocks.size() == 0){
-                        content.setText(i.content.toString())
+                        content.appendText(i.content.toString(), true)
                     }
                     else{
                         i.blocks.each{listItem ->
-                            def paragraph = content.addNewTextParagraph();
-                            paragraph.setBulletAutoNumber(AutoNumberingScheme.alphaLcPeriod, 1)
-                            def t = paragraph.addNewTextRun()
-                            t.setText(listItem.text)
+                            content.appendText(listItem.text, true)
                         }
                     }
                 }
@@ -60,7 +66,6 @@ class PowerPointWriter {
                     println "1だんまで"
                 }
             }
-            content.setAnchor(new Rectangle(20, 100, 600, 600));
         }
 
 
