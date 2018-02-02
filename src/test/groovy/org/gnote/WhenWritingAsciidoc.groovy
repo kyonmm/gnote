@@ -57,9 +57,11 @@ class WhenWritingAsciidoc extends Specification {
 
     def "Main Test"(){
         expect:
-        Main.main("example.adoc")
-    }
+        Main.main(inputPath)
 
+        where:
+        inputPath << ["example.adoc", "~/introduction-asciidoc.adoc"]
+    }
 
 
 }

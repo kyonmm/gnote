@@ -18,7 +18,8 @@ class PowerPointWriter {
     }
 
     void generate(String filePath, String outputPath) {
-        def document = reader.read(filePath)
+        def f = new File(filePath.replace(/~/, System.getProperty("user.home")))
+        def document = reader.read(f.absolutePath)
         def ppt = new XMLSlideShow();
 
         def master =  ppt.getSlideMasters().get(0)
