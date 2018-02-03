@@ -10,6 +10,7 @@ import org.asciidoctor.ast.AbstractBlock
 import org.asciidoctor.ast.BlockImpl
 import org.asciidoctor.ast.Document
 import org.asciidoctor.ast.ListImpl
+import org.asciidoctor.ast.ListItemImpl
 import org.jsoup.Jsoup
 
 /**
@@ -23,6 +24,35 @@ class PowerPointWriter {
     reader = asciidocReader
   }
   def appender = { XSLFTextShape shape, List<AbstractBlock> list, boolean ordered, int indent ->
+    list.each {
+      if (it.hasProperty("text")) {
+        def p = shape.addNewTextParagraph()
+        if (ordered) {
+          p.setBulletAutoNumber(AutoNumberingScheme.arabicPeriod, 1)
+        }
+        p.setIndentLevel(indent)
+        if(it.text.startsWith("<a href=\"")){
+          def xml = Jsoup.parse(it.text)
+          def link = xml.select("a")
+          def linkPath = link.attr("href")
+          def text = link.text()
+          def t = p.addNewTextRun()
+          t.setText(text)
+          def hyperLink = t.createHyperlink()
+          hyperLink.linkToUrl(linkPath)
+        }
+        else{
+          def t = p.addNewTextRun()
+          t.setText(it.text)
+        }
+      }
+      if (0 < it.getBlocks().size()) {
+        def isListImpl = it instanceof ListImpl
+        appender(shape, it.getBlocks(), isListImpl ? it.getContext().contains("olist") : ordered, isListImpl ? indent : indent + 1)
+      }
+    }
+  }
+  def appenderItem = { XSLFTextShape shape, ListItemImpl list, boolean ordered, int indent ->
     list.each {
       if (it.hasProperty("text")) {
         def p = shape.addNewTextParagraph()
@@ -93,20 +123,25 @@ class PowerPointWriter {
     sleep(100)
   }
 
+  def beforeTitle = ""
   private void createContents(AbstractBlock chapter, XMLSlideShow ppt, master, File inputFile) {
-// ==
-    def slide = ppt.createSlide(master.getLayout("Title and Content"))
-    slide.getPlaceholders().each { it.clearText() }
-    def header = slide.getPlaceholder(0)
-    header.setText(chapter.title ?: "")
+    beforeTitle = chapter.title ?: beforeTitle
     def level = chapter.level
-    // content or ===
-    def content = slide.getPlaceholder(1)
     chapter.blocks.eachWithIndex { i, idx ->
       if (i.level == level) {
+        def slide = ppt.createSlide(master.getLayout("Title and Content"))
+        slide.getPlaceholders().each { it.clearText() }
+        def header = slide.getPlaceholder(0)
+        header.setText(chapter.title ?: i.title ?: beforeTitle ?: "")
+        // content or ===
+        def content = slide.getPlaceholder(1)
+        content.setText("")
         switch (i.class) {
           case ListImpl:
             appender(content, i.items, i.getContext().contains("olist"), 0)
+            break
+          case ListItemImpl:
+            appenderItem(content, (ListItemImpl)i, i.getContext().contains("olist"), 0)
             break
           case BlockImpl:
             def b = i as BlockImpl
@@ -140,28 +175,30 @@ class PowerPointWriter {
                     hyperLink.linkToUrl(linkPath)
                     break
                   default:
-                    println "${b.getBlockname()} not suppert content || ${b.content.toString()}"
-                    content.setText("")
+                    content.appendText(b.content.toString(), true)
                 }
                 break
               case "open":
                 println "plantuml ${b.getBlockname()} not suppert"
-                println "${b.getBlockname()} content || ${b.content.toString()}"
                 content.setText("")
                 break
               case "admonition":
                 println "マーカー ${b.getBlockname()} not suppert"
-                println "${b.getBlockname()} content || ${b.content.toString()}"
+                content.setText("")
+                break
+              default:
+                println "other ${b.getBlockname()} not suppert"
                 content.setText("")
                 break
             }
             break
           default:
-            println "${i.class}--content-- ${i.content.toString()}"
             content.appendText(i.content.toString(), true)
             break
         }
       } else {
+        println i.class
+        println i.content
         createContents(i, ppt, master, inputFile)
       }
     }
