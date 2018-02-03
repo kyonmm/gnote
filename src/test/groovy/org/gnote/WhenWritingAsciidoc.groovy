@@ -21,47 +21,47 @@ import java.awt.Rectangle
  */
 class WhenWritingAsciidoc extends Specification {
 
-    def "write simple asciidoc"(){
-        when:
-        def asciidoctor = Asciidoctor.Factory.create()
-        def hs =  asciidoctor.readDocumentHeader(new File("example.adoc"))
-        then:
-        hs.documentTitle.main == "Title"
-    }
+  def "write simple asciidoc"(){
+    when:
+    def asciidoctor = Asciidoctor.Factory.create()
+    def hs =  asciidoctor.readDocumentHeader(new File("example.adoc"))
+    then:
+    hs.documentTitle.main == "Title"
+  }
 
-    def "convert pptx"(){
-        given:
-        def asciidoctor = Asciidoctor.Factory.create()
-        def hs =  asciidoctor.readDocumentHeader(new File("example.adoc"))
+  def "convert pptx"(){
+    given:
+    def asciidoctor = Asciidoctor.Factory.create()
+    def hs =  asciidoctor.readDocumentHeader(new File("example.adoc"))
 
-        when:
-        //create a new empty slide show
-        XMLSlideShow ppt = new XMLSlideShow();
-        XSLFSlide slide = ppt.createSlide();
+    when:
+    //create a new empty slide show
+    XMLSlideShow ppt = new XMLSlideShow();
+    XSLFSlide slide = ppt.createSlide();
 
 
-        XSLFTextBox shape = slide.createTextBox();
-        shape.setText(hs.documentTitle.main)
-        shape.setAnchor(new Rectangle(100, 100, 200, 200));
-        XSLFTextParagraph p = shape.addNewTextParagraph();
+    XSLFTextBox shape = slide.createTextBox();
+    shape.setText(hs.documentTitle.main)
+    shape.setAnchor(new Rectangle(100, 100, 200, 200));
+    XSLFTextParagraph p = shape.addNewTextParagraph();
 
-        FileOutputStream out = new FileOutputStream("merged.pptx");
-        ppt.write(out);
-        ppt.close()
-        out.close();
+    FileOutputStream out = new FileOutputStream("merged.pptx");
+    ppt.write(out);
+    ppt.close()
+    out.close();
 
-        then:
-        true
+    then:
+    true
 
-    }
+  }
 
-    def "Main Test"(){
-        expect:
-        Main.main(inputPath)
+  def "Main Test"(){
+    expect:
+    Main.main(inputPath)
 
-        where:
-        inputPath << ["example.adoc", "~/introduction-asciidoc.adoc"]
-    }
+    where:
+    inputPath << ["example.adoc", "~/introduction-asciidoc.adoc"]
+  }
 
 
 }
